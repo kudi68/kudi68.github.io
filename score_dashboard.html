@@ -5,358 +5,1453 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>成績分佈查詢</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --canvas:#faf9f5;--surface-card:#efe9de;--surface-dark:#181715;
-  --surface-dark-el:#252320;--ink:#141413;--body:#3d3d3a;--muted:#6c6a64;
-  --hairline:#e6dfd8;--coral:#cc785c;--coral-active:#a9583e;
-  --teal:#5db8a6;--amber:#e8a55a;--on-dark:#faf9f5;--on-dark-soft:#a09d96;
-  --r-md:8px;--r-lg:12px;--r-xl:16px;
+  --canvas:#faf9f5;
+  --canvas-strong:#f4eee4;
+  --surface-card:#efe9de;
+  --surface-card-strong:#e8dfd2;
+  --surface-dark:#181715;
+  --surface-dark-soft:#252320;
+  --ink:#141413;
+  --body:#3d3d3a;
+  --muted:#6c6a64;
+  --muted-soft:#8f8b83;
+  --hairline:#e4ddd2;
+  --coral:#cc785c;
+  --coral-active:#a9583e;
+  --teal:#5db8a6;
+  --amber:#e8a55a;
+  --sky:#7bbce8;
+  --on-dark:#faf9f5;
+  --on-dark-soft:#a09d96;
+  --r-sm:8px;
+  --r-md:12px;
+  --r-lg:18px;
+  --shadow-soft:0 14px 40px rgba(20,20,19,.06);
+  --shadow-card:0 20px 44px rgba(20,20,19,.08);
 }
-body{background:var(--canvas);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh}
-.page{max-width:720px;margin:0 auto;padding:48px 20px 80px}
-
-/* Header */
-.header{text-align:center;margin-bottom:40px}
-.header h1{font-family:'EB Garamond',serif;font-size:clamp(28px,5vw,42px);font-weight:400;letter-spacing:-0.5px;color:var(--ink);line-height:1.15}
-.header p{margin-top:10px;font-size:14px;color:var(--muted);letter-spacing:0.3px}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top, rgba(204,120,92,.12), transparent 30%),
+    linear-gradient(180deg, #fdfcf8 0%, var(--canvas) 45%, #f6f0e7 100%);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+}
+button,input{font:inherit}
+button{border:none;background:none;color:inherit}
+[hidden]{display:none !important}
+.page{max-width:1180px;margin:0 auto;padding:40px 20px 84px}
+.header{text-align:center;margin-bottom:28px}
+.header h1{
+  font-family:'EB Garamond',serif;
+  font-size:clamp(30px,5vw,48px);
+  line-height:1.05;
+  font-weight:500;
+  letter-spacing:-0.9px;
+}
+.header p{
+  margin-top:12px;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.65;
+}
 .coral-dot{color:var(--coral)}
-
-/* Search */
-.search-wrap{position:relative;margin-bottom:24px}
-.search-input{
-  width:100%;padding:12px 16px;font-size:15px;font-family:'Inter',sans-serif;
-  background:var(--canvas);color:var(--ink);border:1.5px solid var(--hairline);
-  border-radius:var(--r-md);outline:none;transition:border-color .15s;
-}
-.search-input:focus{border-color:var(--coral)}
-.search-input::placeholder{color:var(--muted)}
-.dropdown{
-  display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:10;
-  background:var(--canvas);border:1.5px solid var(--hairline);border-radius:var(--r-md);
-  max-height:260px;overflow-y:auto;box-shadow:0 4px 16px rgba(20,20,19,.1);
-}
-.dropdown.open{display:block}
-.drop-item{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 16px;cursor:pointer;transition:background .1s;font-size:14px;
-}
-.drop-item:hover{background:var(--surface-card)}
-.drop-item .di-doc{color:var(--muted);font-size:13px;font-family:monospace}
-.drop-item .di-name{font-weight:500}
-.no-result{padding:12px 16px;font-size:14px;color:var(--muted);text-align:center}
-
-/* Score Card */
-.card{
-  background:var(--surface-card);border-radius:var(--r-xl);padding:28px 24px 24px;
-  margin-bottom:28px;opacity:0;transform:translateY(8px);
-  transition:opacity .35s ease,transform .35s ease;display:none;
-}
-.card.visible{display:block}
-.card.animated{opacity:1;transform:translateY(0)}
-.card-name{font-family:'EB Garamond',serif;font-size:22px;font-weight:400;margin-bottom:4px}
-.card-doc{font-size:13px;color:var(--muted);margin-bottom:20px;letter-spacing:.3px}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-@media(max-width:480px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
-.stat-box{background:var(--canvas);border-radius:var(--r-lg);padding:16px 12px;text-align:center}
-.stat-val{font-family:'EB Garamond',serif;font-size:26px;font-weight:400;color:var(--coral);line-height:1}
-.stat-lbl{font-size:11px;color:var(--muted);margin-top:5px;letter-spacing:.5px;text-transform:uppercase}
-.stat-sub{font-size:12px;color:var(--body);margin-top:3px}
-
-/* Chart */
-.chart-wrap{
-  background:var(--surface-dark);border-radius:var(--r-xl);padding:24px 20px 20px;
+.controls{
   position:relative;
+  z-index:20;
+  background:rgba(255,255,255,.58);
+  backdrop-filter:blur(10px);
+  border:1px solid rgba(228,221,210,.9);
+  border-radius:24px;
+  padding:22px;
+  box-shadow:var(--shadow-soft);
 }
-.chart-title{font-family:'EB Garamond',serif;font-size:16px;color:var(--on-dark);margin-bottom:16px;font-weight:400}
-canvas#chart{width:100%;display:block;border-radius:var(--r-md)}
-.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px}
-.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--on-dark-soft)}
-.leg-line{width:18px;height:2px;border-radius:2px;flex-shrink:0}
-.leg-line.dashed{background:repeating-linear-gradient(90deg,currentColor 0,currentColor 4px,transparent 4px,transparent 7px)}
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+}
+.toolbar-group{display:flex;flex-wrap:wrap;gap:10px}
+.section-kicker{
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:1.2px;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+.toolbar-note{
+  font-size:12px;
+  color:var(--muted-soft);
+}
+.mode-btn,.shortcut-btn,.ghost-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:11px 16px;
+  border-radius:999px;
+  cursor:pointer;
+  transition:transform .15s ease, background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.mode-btn{
+  background:var(--coral);
+  color:#fff;
+  font-weight:600;
+  box-shadow:0 12px 28px rgba(204,120,92,.22);
+}
+.mode-btn:hover{background:var(--coral-active);transform:translateY(-1px)}
+.shortcut-btn,.ghost-btn{
+  background:var(--canvas);
+  color:var(--ink);
+  border:1px solid var(--hairline);
+}
+.shortcut-btn:hover,.ghost-btn:hover{background:var(--surface-card)}
+.shortcut-btn.is-active{
+  background:var(--surface-card);
+  border-color:rgba(204,120,92,.32);
+  color:var(--coral-active);
+}
+.hint-strip{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 18px;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid rgba(228,221,210,.8);
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.6;
+}
+.hint-strip strong{color:var(--ink);font-weight:600}
+.search-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+  margin-top:18px;
+}
+body.compare-on .search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.search-panel{
+  position:relative;
+  z-index:1;
+  padding:16px;
+  border:1px solid rgba(228,221,210,.85);
+  border-radius:20px;
+  background:rgba(250,249,245,.88);
+  transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.search-panel.is-active{
+  z-index:6;
+  border-color:rgba(204,120,92,.48);
+  box-shadow:0 12px 26px rgba(204,120,92,.1);
+  transform:translateY(-1px);
+}
+.search-panel-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.search-panel-title{
+  font-size:14px;
+  font-weight:600;
+  color:var(--ink);
+}
+.search-panel-badge{
+  font-size:11px;
+  font-weight:600;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.search-input{
+  width:100%;
+  padding:14px 16px;
+  border-radius:14px;
+  border:1.5px solid var(--hairline);
+  background:#fff;
+  color:var(--ink);
+  font-size:15px;
+  outline:none;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.search-input:focus{
+  border-color:rgba(204,120,92,.58);
+  box-shadow:0 0 0 4px rgba(204,120,92,.08);
+}
+.search-input::placeholder{color:var(--muted-soft)}
+.search-help{
+  margin-top:10px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.55;
+}
+.result-panel{
+  display:none;
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  right:0;
+  z-index:30;
+  background:var(--canvas);
+  border:1.5px solid rgba(228,221,210,.95);
+  border-radius:18px;
+  box-shadow:0 18px 50px rgba(20,20,19,.12);
+  overflow:hidden;
+}
+.result-panel.open{display:block}
+.result-summary{
+  padding:12px 16px;
+  border-bottom:1px solid rgba(228,221,210,.86);
+  font-size:12px;
+  color:var(--muted);
+  background:rgba(239,233,222,.45);
+}
+.result-list{
+  max-height:320px;
+  overflow-y:auto;
+}
+.result-item{
+  width:100%;
+  display:grid;
+  grid-template-columns:72px minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  text-align:left;
+  padding:13px 16px;
+  cursor:pointer;
+  border-bottom:1px solid rgba(228,221,210,.72);
+  transition:background-color .12s ease;
+}
+.result-item:last-child{border-bottom:none}
+.result-item:hover,.result-item.is-highlighted{background:var(--surface-card)}
+.result-rank{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:56px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(204,120,92,.1);
+  color:var(--coral-active);
+  font-size:12px;
+  font-weight:600;
+}
+.result-main{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.result-name{
+  color:var(--ink);
+  font-size:14px;
+  font-weight:600;
+}
+.result-meta{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.4;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.result-score{
+  color:var(--body);
+  font-size:13px;
+  font-variant-numeric:tabular-nums;
+}
+.empty-result{
+  padding:16px;
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+}
+.compare-summary{
+  display:none;
+  margin-top:20px;
+  padding:20px 22px;
+  border-radius:22px;
+  background:linear-gradient(135deg, rgba(204,120,92,.08), rgba(123,188,232,.12));
+  border:1px solid rgba(228,221,210,.9);
+  box-shadow:var(--shadow-soft);
+}
+body.compare-on .compare-summary{display:block}
+.compare-summary.is-ready{display:block}
+.compare-summary-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:16px;
+}
+.compare-summary-header h2{
+  font-family:'EB Garamond',serif;
+  font-size:24px;
+  font-weight:500;
+}
+.compare-summary-header p{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.6;
+}
+.compare-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+.compare-box{
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(228,221,210,.84);
+  border-radius:16px;
+  padding:16px;
+}
+.compare-value{
+  color:var(--ink);
+  font-family:'EB Garamond',serif;
+  font-size:28px;
+  line-height:1;
+}
+.compare-label{
+  margin-top:8px;
+  color:var(--muted);
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+}
+.compare-ready-note{
+  color:var(--muted);
+  font-size:14px;
+}
+.cards-wrap{
+  display:grid;
+  gap:18px;
+  margin-top:22px;
+}
+body.compare-on .cards-wrap{grid-template-columns:repeat(2,minmax(0,1fr))}
+.student-card{
+  background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(239,233,222,.92));
+  border:1px solid rgba(228,221,210,.92);
+  border-radius:24px;
+  padding:24px;
+  box-shadow:var(--shadow-card);
+  transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.student-card.is-active{
+  border-color:rgba(204,120,92,.46);
+  box-shadow:0 22px 50px rgba(204,120,92,.1);
+  transform:translateY(-2px);
+}
+.card-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+.card-kicker{
+  color:var(--muted);
+  font-size:11px;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  font-weight:600;
+}
+.card-name{
+  margin-top:6px;
+  font-family:'EB Garamond',serif;
+  font-size:30px;
+  line-height:1.04;
+  font-weight:500;
+}
+.card-doc{
+  margin-top:8px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.5;
+}
+.card-nav{
+  display:flex;
+  gap:10px;
+  flex-shrink:0;
+}
+.nav-btn{
+  width:42px;
+  height:42px;
+  border-radius:999px;
+  border:1px solid rgba(228,221,210,.92);
+  background:#fff;
+  cursor:pointer;
+  font-size:18px;
+  font-weight:600;
+  box-shadow:0 10px 24px rgba(20,20,19,.06);
+  transition:transform .15s ease, background-color .15s ease, color .15s ease, opacity .15s ease;
+}
+.nav-btn:hover:not(:disabled){
+  transform:translateY(-1px);
+  background:var(--surface-card);
+}
+.nav-btn:disabled{
+  cursor:not-allowed;
+  opacity:.35;
+  box-shadow:none;
+}
+.empty-note{
+  margin-top:18px;
+  padding:18px;
+  border-radius:18px;
+  background:rgba(250,249,245,.82);
+  border:1px dashed rgba(204,120,92,.32);
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.7;
+}
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin-top:20px;
+}
+.stat-box{
+  padding:16px 14px;
+  border-radius:18px;
+  background:rgba(250,249,245,.9);
+  border:1px solid rgba(228,221,210,.86);
+}
+.stat-val{
+  font-family:'EB Garamond',serif;
+  font-size:30px;
+  line-height:1;
+  color:var(--coral-active);
+}
+.stat-lbl{
+  margin-top:7px;
+  color:var(--muted);
+  font-size:11px;
+  letter-spacing:.9px;
+  text-transform:uppercase;
+}
+.stat-sub{
+  margin-top:4px;
+  color:var(--body);
+  font-size:12px;
+}
+.nearby-wrap{
+  margin-top:22px;
+  padding-top:18px;
+  border-top:1px solid rgba(228,221,210,.8);
+}
+.section-title{
+  color:var(--ink);
+  font-size:15px;
+  font-weight:600;
+}
+.nearby-caption{
+  margin-top:6px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+.nearby-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:14px;
+}
+.nearby-item{
+  width:100%;
+  display:grid;
+  grid-template-columns:70px minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  text-align:left;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(228,221,210,.82);
+  background:rgba(255,255,255,.76);
+  cursor:pointer;
+  transition:border-color .12s ease, transform .12s ease, background-color .12s ease;
+}
+.nearby-item:hover{
+  transform:translateX(2px);
+  border-color:rgba(204,120,92,.28);
+  background:rgba(250,249,245,.95);
+}
+.nearby-item.is-current{
+  border-color:rgba(204,120,92,.34);
+  background:rgba(204,120,92,.08);
+}
+.nearby-name{
+  color:var(--ink);
+  font-size:14px;
+  font-weight:600;
+}
+.nearby-doc{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.4;
+}
+.nearby-score{
+  color:var(--body);
+  font-size:13px;
+  font-variant-numeric:tabular-nums;
+}
+.chart-wrap{
+  margin-top:24px;
+  background:linear-gradient(180deg, var(--surface-dark), #1d1b19);
+  border-radius:26px;
+  padding:24px 22px 22px;
+  box-shadow:0 24px 60px rgba(20,20,19,.16);
+}
+.chart-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:16px;
+}
+.chart-header h2{
+  color:var(--on-dark);
+  font-family:'EB Garamond',serif;
+  font-size:25px;
+  font-weight:500;
+}
+.chart-header p{
+  color:var(--on-dark-soft);
+  font-size:13px;
+  line-height:1.6;
+}
+canvas#chart{
+  width:100%;
+  display:block;
+  border-radius:16px;
+}
+.legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 16px;
+  margin-top:16px;
+}
+.leg-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--on-dark-soft);
+  font-size:12px;
+}
+.leg-line{
+  width:20px;
+  height:2px;
+  border-radius:999px;
+  flex-shrink:0;
+}
+.leg-swatch{
+  width:12px;
+  height:12px;
+  border-radius:999px;
+  flex-shrink:0;
+}
+.helper-footer{
+  margin-top:18px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.7;
+}
+.helper-footer strong{color:var(--ink);font-weight:600}
+body:not(.compare-on) .compare-only{display:none !important}
+body.compare-on .compare-panel-note{display:block}
+
+@media(max-width:980px){
+  .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .compare-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+  body.compare-on .search-grid{grid-template-columns:1fr}
+  body.compare-on .cards-wrap{
+    display:flex;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    gap:14px;
+    padding-bottom:4px;
+  }
+  body.compare-on .student-card{
+    min-width:100%;
+    scroll-snap-align:start;
+  }
+  .card-top{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .card-nav{align-self:flex-end}
+  .chart-header{
+    flex-direction:column;
+  }
+}
+@media(max-width:520px){
+  .page{padding:26px 14px 68px}
+  .controls,.student-card,.chart-wrap,.compare-summary{padding:18px}
+  .result-item,.nearby-item{grid-template-columns:64px minmax(0,1fr)}
+  .result-score,.nearby-score{grid-column:2;justify-self:start}
+  .compare-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="header">
+  <header class="header">
     <h1>成績分佈查詢<span class="coral-dot"> ·</span></h1>
-    <p>共 154 位學員 &nbsp;／&nbsp; 輸入姓名或 DOC 號碼查詢個人成績</p>
-  </div>
+    <p>共 154 位學員，支援姓名、名次、DOC 查詢。<br>若要查 DOC，請記得輸入完整的 <strong>DOC</strong> 開頭。</p>
+  </header>
 
-  <div class="search-wrap">
-    <input class="search-input" id="searchInput" type="text" placeholder="輸入姓名或 DOC 號碼…" autocomplete="off">
-    <div class="dropdown" id="dropdown"></div>
-  </div>
-
-  <div class="card" id="card">
-    <div class="card-name" id="cardName"></div>
-    <div class="card-doc" id="cardDoc"></div>
-    <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-val" id="sScore">—</div>
-        <div class="stat-lbl">原圖總分</div>
+  <section class="controls">
+    <div class="toolbar">
+      <div>
+        <div class="section-kicker">Lookup</div>
+        <div class="toolbar-note">單檔靜態頁版本，適合直接部署到 GitHub Pages</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-val" id="sRank">—</div>
-        <div class="stat-lbl">排名</div>
-        <div class="stat-sub" id="sRankSub"></div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val" id="sZ">—</div>
-        <div class="stat-lbl">Z 值</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val" id="sPct">—</div>
-        <div class="stat-lbl">百分位</div>
-        <div class="stat-sub">超越同學</div>
+      <div class="toolbar-group">
+        <button class="shortcut-btn" type="button" data-shortcut="1-10">Top 10</button>
+        <button class="shortcut-btn" type="button" data-shortcut="1-50">Top 50</button>
+        <button class="shortcut-btn" type="button" data-shortcut="145-154">後 10 名</button>
+        <button class="mode-btn" type="button" id="compareToggle">開啟雙人比較</button>
       </div>
     </div>
-  </div>
 
-  <div class="chart-wrap">
-    <div class="chart-title">成績分佈曲線</div>
+    <div class="hint-strip">
+      <span><strong>查詢格式</strong>：姓名 / 名次 / DOC（DOC 要先輸入 DOC）</span>
+      <span><strong>快捷鍵</strong>：`/` 聚焦主搜尋、`Esc` 關閉清單、`← →` 切換名次</span>
+      <span class="compare-panel-note" hidden><strong>手機版</strong>：雙人比較時可左右滑動切換卡片</span>
+    </div>
+
+    <div class="search-grid" id="searchGrid">
+      <section class="search-panel is-active" data-slot="primary">
+        <div class="search-panel-header">
+          <div class="search-panel-title">主卡搜尋</div>
+          <div class="search-panel-badge">Primary</div>
+        </div>
+        <input class="search-input" id="search-primary" type="text" autocomplete="off" placeholder="輸入姓名、名次，或 DOC91272">
+        <div class="search-help">數字視為名次；像 `1-10` 這種格式會開啟名次區間清單。</div>
+        <div class="result-panel" id="panel-primary"></div>
+      </section>
+
+      <section class="search-panel compare-only" data-slot="compare">
+        <div class="search-panel-header">
+          <div class="search-panel-title">比較卡搜尋</div>
+          <div class="search-panel-badge">Compare</div>
+        </div>
+        <input class="search-input" id="search-compare" type="text" autocomplete="off" placeholder="加入第二位學生比較">
+        <div class="search-help">這裡搜尋到的人，會填進比較卡；鍵盤左右鍵只會控制目前作用中的卡。</div>
+        <div class="result-panel" id="panel-compare"></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="compare-summary" id="compareSummary">
+    <div class="compare-summary-header">
+      <div>
+        <h2>雙人比較摘要</h2>
+        <p id="compareSummaryText" class="compare-ready-note">開啟比較後，選兩位學生就會在這裡顯示差異摘要。</p>
+      </div>
+      <button type="button" class="ghost-btn compare-only" id="swapCompareBtn">交換左右卡</button>
+    </div>
+    <div class="compare-grid" id="compareGrid" hidden>
+      <div class="compare-box">
+        <div class="compare-value" id="diffScore">—</div>
+        <div class="compare-label">分數差</div>
+      </div>
+      <div class="compare-box">
+        <div class="compare-value" id="diffRank">—</div>
+        <div class="compare-label">名次差</div>
+      </div>
+      <div class="compare-box">
+        <div class="compare-value" id="leadScore">—</div>
+        <div class="compare-label">誰分數較高</div>
+      </div>
+      <div class="compare-box">
+        <div class="compare-value" id="leadRank">—</div>
+        <div class="compare-label">誰名次較前</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cards-wrap" id="cardsWrap">
+    <article class="student-card is-active" id="card-primary" data-slot="primary" tabindex="0">
+      <div class="card-top">
+        <div>
+          <div class="card-kicker">主卡</div>
+          <div class="card-name" data-field="name">尚未選擇學生</div>
+          <div class="card-doc" data-field="doc">請從上方輸入姓名、名次，或 DOC 後載入結果。</div>
+        </div>
+        <div class="card-nav">
+          <button type="button" class="nav-btn" data-dir="-1" aria-label="前一名">←</button>
+          <button type="button" class="nav-btn" data-dir="1" aria-label="後一名">→</button>
+        </div>
+      </div>
+      <div class="empty-note" data-field="empty">載入後會顯示分數、名次、Z 值、百分位，以及附近名次清單。</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" data-field="score">—</div>
+          <div class="stat-lbl">原圖總分</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" data-field="rank">—</div>
+          <div class="stat-lbl">排名</div>
+          <div class="stat-sub" data-field="rankSub">共 154 人</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" data-field="z">—</div>
+          <div class="stat-lbl">Z 值</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" data-field="pct">—</div>
+          <div class="stat-lbl">百分位</div>
+          <div class="stat-sub">超越同學</div>
+        </div>
+      </div>
+      <div class="nearby-wrap">
+        <div class="section-title">附近名次</div>
+        <div class="nearby-caption">固定顯示前 2 名、自己、後 2 名；點一下就能切換。</div>
+        <div class="nearby-list" data-field="nearby"></div>
+      </div>
+    </article>
+
+    <article class="student-card compare-only" id="card-compare" data-slot="compare" tabindex="0">
+      <div class="card-top">
+        <div>
+          <div class="card-kicker">比較卡</div>
+          <div class="card-name" data-field="name">尚未加入比較對象</div>
+          <div class="card-doc" data-field="doc">開啟雙人比較後，從上方搜尋第二位學生。</div>
+        </div>
+        <div class="card-nav">
+          <button type="button" class="nav-btn" data-dir="-1" aria-label="前一名">←</button>
+          <button type="button" class="nav-btn" data-dir="1" aria-label="後一名">→</button>
+        </div>
+      </div>
+      <div class="empty-note" data-field="empty">雙人模式下，這張卡會和主卡一起出現在分布圖，也會同步計算分數差與名次差。</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" data-field="score">—</div>
+          <div class="stat-lbl">原圖總分</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" data-field="rank">—</div>
+          <div class="stat-lbl">排名</div>
+          <div class="stat-sub" data-field="rankSub">共 154 人</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" data-field="z">—</div>
+          <div class="stat-lbl">Z 值</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" data-field="pct">—</div>
+          <div class="stat-lbl">百分位</div>
+          <div class="stat-sub">超越同學</div>
+        </div>
+      </div>
+      <div class="nearby-wrap">
+        <div class="section-title">附近名次</div>
+        <div class="nearby-caption">比較卡也能獨立用左右鍵或實體按鈕切換名次。</div>
+        <div class="nearby-list" data-field="nearby"></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="chart-wrap">
+    <div class="chart-header">
+      <div>
+        <h2>成績分佈曲線</h2>
+        <p>平均數、中位數與 ±1σ 會固定顯示；查到的學生則以垂直線疊在同一張圖上。</p>
+      </div>
+      <div class="toolbar-note">目前平均數 89.38 / 中位數 90.67</div>
+    </div>
     <canvas id="chart"></canvas>
     <div class="legend" id="legend">
-      <div class="leg-item"><div class="leg-line" style="background:#5db8a6"></div>平均數 (89.38)</div>
-      <div class="leg-item"><div class="leg-line" style="background:#e8a55a"></div>中位數 (90.67)</div>
-      <div class="leg-item"><div class="leg-line" style="background:rgba(204,120,92,.4);height:10px;border-radius:2px"></div>±1σ 範圍</div>
-      <div class="leg-item" id="legStudent" style="display:none"><div class="leg-line" style="background:#cc785c"></div><span id="legStudentLabel">你的成績</span></div>
+      <div class="leg-item"><span class="leg-line" style="background:#5db8a6"></span>平均數 (89.38)</div>
+      <div class="leg-item"><span class="leg-line" style="background:#e8a55a"></span>中位數 (90.67)</div>
+      <div class="leg-item"><span class="leg-line" style="background:rgba(204,120,92,.38);height:10px"></span>±1σ 範圍</div>
     </div>
+  </section>
+
+  <div class="helper-footer">
+    <strong>提示</strong>：按 `Top 10`、`Top 50`、`後 10 名` 會直接開啟名次區間清單。比較模式的手機版會改成左右滑動切換卡片，不會硬塞雙欄。
   </div>
 </div>
 
 <script>
-const DATA = {"students": [{"doc": "DOC90237", "name": "李逸佳", "score": 90.57422, "rank": 81}, {"doc": "DOC90253", "name": "李奇", "score": 80.284, "rank": 146}, {"doc": "DOC90331", "name": "黃楷勛", "score": 84.98842, "rank": 134}, {"doc": "DOC91201", "name": "徐來佑", "score": 92.19526, "rank": 41}, {"doc": "DOC91202", "name": "楊旻修", "score": 92.55789, "rank": 34}, {"doc": "DOC91203", "name": "洪志碩", "score": 93.72895, "rank": 7}, {"doc": "DOC91204", "name": "陳冠勛", "score": 87.22, "rank": 123}, {"doc": "DOC91205", "name": "朱柏安", "score": 93.58579, "rank": 12}, {"doc": "DOC91206", "name": "郭逸賢", "score": 83.97895, "rank": 137}, {"doc": "DOC91207", "name": "李威霖", "score": 90.21947, "rank": 88}, {"doc": "DOC91208", "name": "陳佑柏", "score": 90.92421, "rank": 70}, {"doc": "DOC91209", "name": "黃文忠", "score": 94.41526, "rank": 2}, {"doc": "DOC91210", "name": "戴語賢", "score": 89.13684, "rank": 106}, {"doc": "DOC91211", "name": "陳韋壬", "score": 91.42053, "rank": 58}, {"doc": "DOC91212", "name": "徐良碩", "score": 93.31263, "rank": 21}, {"doc": "DOC91213", "name": "張鈞翔", "score": 90.71211, "rank": 76}, {"doc": "DOC91214", "name": "蕭郁軒", "score": 93.35009, "rank": 19}, {"doc": "DOC91215", "name": "王賢堯", "score": 88.23316, "rank": 114}, {"doc": "DOC91216", "name": "黃泓量", "score": 89.33127, "rank": 103}, {"doc": "DOC91217", "name": "黎豪正", "score": 92.47842, "rank": 35}, {"doc": "DOC91218", "name": "蔡鼎騏", "score": 83.79842, "rank": 139}, {"doc": "DOC91219", "name": "高郁棠", "score": 93.09263, "rank": 23}, {"doc": "DOC91220", "name": "吳羿儒", "score": 88.10789, "rank": 115}, {"doc": "DOC91221", "name": "宋明曄", "score": 91.14263, "rank": 66}, {"doc": "DOC91222", "name": "吳亭霖", "score": 85.41684, "rank": 132}, {"doc": "DOC91223", "name": "任興賢", "score": 90.23158, "rank": 87}, {"doc": "DOC91224", "name": "柯日新", "score": 81.76, "rank": 143}, {"doc": "DOC91225", "name": "黃君瑜", "score": 87.55947, "rank": 120}, {"doc": "DOC91226", "name": "陳麒安", "score": 89.98, "rank": 91}, {"doc": "DOC91227", "name": "張哲維", "score": 92.64947, "rank": 32}, {"doc": "DOC91228", "name": "黃譯禾", "score": 90.29474, "rank": 86}, {"doc": "DOC91229", "name": "張駿霖", "score": 92.27579, "rank": 39}, {"doc": "DOC91230", "name": "廖見洋", "score": 80.09263, "rank": 147}, {"doc": "DOC91231", "name": "李亞叡", "score": 84.11684, "rank": 136}, {"doc": "DOC91232", "name": "張迦恩", "score": 90.94579, "rank": 69}, {"doc": "DOC91233", "name": "郭中皓", "score": 92.91526, "rank": 27}, {"doc": "DOC91234", "name": "陳楷翔", "score": 93.12263, "rank": 22}, {"doc": "DOC91235", "name": "高兢東", "score": 90.92, "rank": 71}, {"doc": "DOC91236", "name": "蘇冠瑋", "score": 91.72368, "rank": 51}, {"doc": "DOC91237", "name": "郭子群", "score": 88.50474, "rank": 113}, {"doc": "DOC91238", "name": "賀靖洋", "score": 91.27895, "rank": 64}, {"doc": "DOC91239", "name": "王梓恩", "score": 91.81105, "rank": 47}, {"doc": "DOC91240", "name": "宋啟榮", "score": 92.59053, "rank": 33}, {"doc": "DOC91241", "name": "林宴辰", "score": 89.72474, "rank": 96}, {"doc": "DOC91242", "name": "陳冠豪", "score": 90.62847, "rank": 79}, {"doc": "DOC91243", "name": "水修寬", "score": 84.52895, "rank": 135}, {"doc": "DOC91244", "name": "張恩睿", "score": 90.36737, "rank": 84}, {"doc": "DOC91245", "name": "蔡秉昕", "score": 91.79, "rank": 49}, {"doc": "DOC91246", "name": "顏典立", "score": 86.38947, "rank": 126}, {"doc": "DOC91247", "name": "黃偉浩", "score": 89.79, "rank": 95}, {"doc": "DOC91248", "name": "江鎮宇", "score": 91.43053, "rank": 57}, {"doc": "DOC91249", "name": "李昕燁", "score": 92.71467, "rank": 31}, {"doc": "DOC91250", "name": "黃志豪", "score": 76.93, "rank": 149}, {"doc": "DOC91251", "name": "沈建言", "score": 94.19338, "rank": 3}, {"doc": "DOC91252", "name": "王奕為", "score": 90.86211, "rank": 72}, {"doc": "DOC91253", "name": "陳俊維", "score": 90.31158, "rank": 85}, {"doc": "DOC91254", "name": "陳奕君", "score": 87.72105, "rank": 119}, {"doc": "DOC91255", "name": "柯柏再", "score": 93.72579, "rank": 8}, {"doc": "DOC91256", "name": "游宜蓁", "score": 93.63211, "rank": 11}, {"doc": "DOC91257", "name": "郭芸嘉", "score": 91.40684, "rank": 59}, {"doc": "DOC91258", "name": "李宜家", "score": 91.5763, "rank": 55}, {"doc": "DOC91259", "name": "陳奎宇", "score": 86.08895, "rank": 127}, {"doc": "DOC91260", "name": "古少榆", "score": 89.48632, "rank": 100}, {"doc": "DOC91261", "name": "賴敬堯", "score": 92.40474, "rank": 36}, {"doc": "DOC91262", "name": "李冠澤", "score": 72.69158, "rank": 154}, {"doc": "DOC91263", "name": "邱德宸", "score": 85.53, "rank": 131}, {"doc": "DOC91264", "name": "許竣傑", "score": 93.40842, "rank": 17}, {"doc": "DOC91265", "name": "謝雨璇", "score": 91.67684, "rank": 52}, {"doc": "DOC91266", "name": "紀愷杰", "score": 89.81, "rank": 94}, {"doc": "DOC91267", "name": "黃柏瑞", "score": 91.04526, "rank": 67}, {"doc": "DOC91268", "name": "莊承勳", "score": 89.2496, "rank": 104}, {"doc": "DOC91269", "name": "許愷峻", "score": 87.87158, "rank": 117}, {"doc": "DOC91270", "name": "趙聲泓", "score": 92.96263, "rank": 25}, {"doc": "DOC91271", "name": "鄭博元", "score": 93.64794, "rank": 10}, {"doc": "DOC91272", "name": "周澤亨", "score": 94.56148, "rank": 1}, {"doc": "DOC91273", "name": "王博憲", "score": 88.92895, "rank": 108}, {"doc": "DOC91274", "name": "王辰睿", "score": 89.69947, "rank": 97}, {"doc": "DOC91275", "name": "王梓驊", "score": 89.12053, "rank": 107}, {"doc": "DOC91276", "name": "沈宏珉", "score": 90.54737, "rank": 82}, {"doc": "DOC91277", "name": "林楷舜", "score": 93.41105, "rank": 16}, {"doc": "DOC91278", "name": "李典哲", "score": 92.35842, "rank": 37}, {"doc": "DOC91279", "name": "廖友德", "score": 92.18737, "rank": 42}, {"doc": "DOC91280", "name": "林宗吾", "score": 75.73053, "rank": 150}, {"doc": "DOC91281", "name": "游定三", "score": 78.46105, "rank": 148}, {"doc": "DOC91282", "name": "李秉桀", "score": 91.23684, "rank": 65}, {"doc": "DOC91283", "name": "龔郁軒", "score": 92.28474, "rank": 38}, {"doc": "DOC91284", "name": "盧德宇", "score": 94.12316, "rank": 4}, {"doc": "DOC91285", "name": "謝定軒", "score": 88.84368, "rank": 110}, {"doc": "DOC91286", "name": "蘇喜容", "score": 89.35474, "rank": 102}, {"doc": "DOC91287", "name": "楊承恩", "score": 93.55212, "rank": 13}, {"doc": "DOC91288", "name": "康瀚太", "score": 89.97316, "rank": 92}, {"doc": "DOC91289", "name": "王行遠", "score": 89.19737, "rank": 105}, {"doc": "DOC91290", "name": "李瑋", "score": 91.57895, "rank": 54}, {"doc": "DOC91291", "name": "陳宥均", "score": 93.38947, "rank": 18}, {"doc": "DOC91292", "name": "李霖", "score": 92.04211, "rank": 43}, {"doc": "DOC91293", "name": "伍嘉傑", "score": 88.72316, "rank": 112}, {"doc": "DOC91294", "name": "許家珩", "score": 89.41737, "rank": 101}, {"doc": "DOC91295", "name": "陳佑", "score": 89.50684, "rank": 99}, {"doc": "DOC91296", "name": "卓浩玄", "score": 90.60526, "rank": 80}, {"doc": "DOC91297", "name": "向冠霖", "score": 90.42, "rank": 83}, {"doc": "DOC91298", "name": "黃宜蓁", "score": 90.83895, "rank": 73}, {"doc": "DOC91299", "name": "楊文吾", "score": 93.69697, "rank": 9}, {"doc": "DOC91300", "name": "鍾宇翔", "score": 90.83474, "rank": 74}, {"doc": "DOC91301", "name": "呂沅泰", "score": 85.34053, "rank": 133}, {"doc": "DOC91302", "name": "劉雨牧", "score": 88.90263, "rank": 109}, {"doc": "DOC91303", "name": "黃昱翔", "score": 92.94421, "rank": 26}, {"doc": "DOC91304", "name": "翁沛緹", "score": 90.64947, "rank": 78}, {"doc": "DOC91305", "name": "葉弘毅", "score": 87.48526, "rank": 121}, {"doc": "DOC91306", "name": "吳挺倫", "score": 74.13923, "rank": 152}, {"doc": "DOC91307", "name": "林郁瀚", "score": 92.23421, "rank": 40}, {"doc": "DOC91308", "name": "謝德馨", "score": 83.26526, "rank": 141}, {"doc": "DOC91309", "name": "洪靖豐", "score": 90.02263, "rank": 90}, {"doc": "DOC91310", "name": "吳玟潔", "score": 85.72947, "rank": 129}, {"doc": "DOC91311", "name": "陳俊宇", "score": 90.71316, "rank": 75}, {"doc": "DOC91312", "name": "姚品瑄", "score": 93.54446, "rank": 14}, {"doc": "DOC91313", "name": "蔡銘祐", "score": 73.14, "rank": 153}, {"doc": "DOC91314", "name": "曾翔麟", "score": 91.39368, "rank": 60}, {"doc": "DOC91315", "name": "林育正", "score": 87.73053, "rank": 118}, {"doc": "DOC91316", "name": "周科霖", "score": 83.95895, "rank": 138}, {"doc": "DOC91317", "name": "林洸宇", "score": 85.84421, "rank": 128}, {"doc": "DOC91318", "name": "郭睿恩", "score": 89.85212, "rank": 93}, {"doc": "DOC91319", "name": "黃馨卉", "score": 92.84158, "rank": 29}, {"doc": "DOC91320", "name": "周芷妤", "score": 92.78158, "rank": 30}, {"doc": "DOC91321", "name": "劉宇容", "score": 93.88579, "rank": 5}, {"doc": "DOC91322", "name": "林宏杰", "score": 92.99114, "rank": 24}, {"doc": "DOC91323", "name": "郁賀羽", "score": 92.85053, "rank": 28}, {"doc": "DOC91324", "name": "林柏樺", "score": 87.91158, "rank": 116}, {"doc": "DOC91325", "name": "許曜顯", "score": 91.78632, "rank": 50}, {"doc": "DOC91327", "name": "林紘毅", "score": 91.79842, "rank": 48}, {"doc": "DOC91328", "name": "林靜", "score": 92.02737, "rank": 44}, {"doc": "DOC91329", "name": "孫漢瑄", "score": 91.36, "rank": 63}, {"doc": "DOC91330", "name": "林映汝", "score": 93.42102, "rank": 15}, {"doc": "DOC91331", "name": "姜知言", "score": 89.50789, "rank": 98}, {"doc": "DOC91332", "name": "于愔", "score": 90.68684, "rank": 77}, {"doc": "DOC91333", "name": "林昀霓", "score": 91.02862, "rank": 68}, {"doc": "DOC91334", "name": "劉欣玫", "score": 93.32105, "rank": 20}, {"doc": "DOC91336", "name": "施佩蓁", "score": 87.29316, "rank": 122}, {"doc": "DOC91337", "name": "施宏賢", "score": 91.47526, "rank": 56}, {"doc": "DOC91338", "name": "郭芳妤", "score": 91.96053, "rank": 46}, {"doc": "DOC91339", "name": "陳薏婷", "score": 91.58105, "rank": 53}, {"doc": "DOC91340", "name": "陳畇蓁", "score": 87.16526, "rank": 124}, {"doc": "DOC91341", "name": "方郁淳", "score": 91.36789, "rank": 61}, {"doc": "DOC91342", "name": "杜芝均", "score": 91.36526, "rank": 62}, {"doc": "DOC91343", "name": "王柏鈞", "score": 87.04632, "rank": 125}, {"doc": "DOC91344", "name": "莊宏森", "score": 75.35368, "rank": 151}, {"doc": "DOC91345", "name": "林展毅", "score": 88.74842, "rank": 111}, {"doc": "DOC91346", "name": "周智城", "score": 90.09316, "rank": 89}, {"doc": "DOC91347", "name": "明宗秀", "score": 91.97842, "rank": 45}, {"doc": "DOC91348", "name": "呂昱瑩", "score": 93.77789, "rank": 6}, {"doc": "DOC91349", "name": "劉廷娟", "score": 83.47316, "rank": 140}, {"doc": "DOC91351", "name": "寸得滿", "score": 81.65474, "rank": 144}, {"doc": "DOC91352", "name": "黃駿宥", "score": 82.31789, "rank": 142}, {"doc": "DOC91353", "name": "梁禹麟", "score": 85.57842, "rank": 130}, {"doc": "DOC91354", "name": "吳昱荷", "score": 81.62842, "rank": 145}], "stats": {"mean": 89.3776, "median": 90.66815, "std": 4.41882, "total": 154, "lo": 69.271, "hi": 97.982}, "kde": {"x": [69.2707, 69.415, 69.5593, 69.7035, 69.8478, 69.9921, 70.1364, 70.2807, 70.4249, 70.5692, 70.7135, 70.8578, 71.0021, 71.1463, 71.2906, 71.4349, 71.5792, 71.7235, 71.8677, 72.012, 72.1563, 72.3006, 72.4449, 72.5891, 72.7334, 72.8777, 73.022, 73.1663, 73.3105, 73.4548, 73.5991, 73.7434, 73.8876, 74.0319, 74.1762, 74.3205, 74.4648, 74.609, 74.7533, 74.8976, 75.0419, 75.1862, 75.3304, 75.4747, 75.619, 75.7633, 75.9076, 76.0518, 76.1961, 76.3404, 76.4847, 76.629, 76.7732, 76.9175, 77.0618, 77.2061, 77.3504, 77.4946, 77.6389, 77.7832, 77.9275, 78.0718, 78.216, 78.3603, 78.5046, 78.6489, 78.7932, 78.9374, 79.0817, 79.226, 79.3703, 79.5146, 79.6588, 79.8031, 79.9474, 80.0917, 80.236, 80.3802, 80.5245, 80.6688, 80.8131, 80.9574, 81.1016, 81.2459, 81.3902, 81.5345, 81.6788, 81.823, 81.9673, 82.1116, 82.2559, 82.4002, 82.5444, 82.6887, 82.833, 82.9773, 83.1216, 83.2658, 83.4101, 83.5544, 83.6987, 83.8429, 83.9872, 84.1315, 84.2758, 84.4201, 84.5643, 84.7086, 84.8529, 84.9972, 85.1415, 85.2857, 85.43, 85.5743, 85.7186, 85.8629, 86.0071, 86.1514, 86.2957, 86.44, 86.5843, 86.7285, 86.8728, 87.0171, 87.1614, 87.3057, 87.4499, 87.5942, 87.7385, 87.8828, 88.0271, 88.1713, 88.3156, 88.4599, 88.6042, 88.7485, 88.8927, 89.037, 89.1813, 89.3256, 89.4699, 89.6141, 89.7584, 89.9027, 90.047, 90.1913, 90.3355, 90.4798, 90.6241, 90.7684, 90.9127, 91.0569, 91.2012, 91.3455, 91.4898, 91.6341, 91.7783, 91.9226, 92.0669, 92.2112, 92.3555, 92.4997, 92.644, 92.7883, 92.9326, 93.0769, 93.2211, 93.3654, 93.5097, 93.654, 93.7982, 93.9425, 94.0868, 94.2311, 94.3754, 94.5196, 94.6639, 94.8082, 94.9525, 95.0968, 95.241, 95.3853, 95.5296, 95.6739, 95.8182, 95.9624, 96.1067, 96.251, 96.3953, 96.5396, 96.6838, 96.8281, 96.9724, 97.1167, 97.261, 97.4052, 97.5495, 97.6938, 97.8381, 97.9824], "y": [0.000353, 0.000422, 0.000502, 0.000593, 0.000696, 0.000812, 0.00094, 0.001083, 0.00124, 0.00141, 0.001594, 0.001792, 0.002002, 0.002223, 0.002455, 0.002695, 0.002943, 0.003196, 0.003452, 0.00371, 0.003966, 0.00422, 0.004468, 0.00471, 0.004942, 0.005164, 0.005373, 0.005569, 0.00575, 0.005916, 0.006065, 0.006198, 0.006315, 0.006415, 0.006498, 0.006565, 0.006616, 0.006652, 0.006673, 0.00668, 0.006674, 0.006655, 0.006625, 0.006585, 0.006535, 0.006477, 0.006413, 0.006343, 0.00627, 0.006195, 0.006121, 0.006048, 0.005979, 0.005916, 0.005861, 0.005817, 0.005784, 0.005766, 0.005763, 0.005778, 0.005812, 0.005867, 0.005943, 0.006042, 0.006165, 0.006311, 0.006482, 0.006676, 0.006895, 0.007137, 0.007402, 0.00769, 0.008, 0.00833, 0.008679, 0.009048, 0.009434, 0.009837, 0.010256, 0.010691, 0.011139, 0.011603, 0.012079, 0.012569, 0.013073, 0.013589, 0.014119, 0.014662, 0.015218, 0.015787, 0.016369, 0.016964, 0.017572, 0.018193, 0.018825, 0.019469, 0.020124, 0.020789, 0.021464, 0.022148, 0.022842, 0.023544, 0.024257, 0.024981, 0.025716, 0.026466, 0.027232, 0.028019, 0.02883, 0.029671, 0.030546, 0.031463, 0.032427, 0.033447, 0.034529, 0.035684, 0.036918, 0.038239, 0.039657, 0.041179, 0.042812, 0.044563, 0.046438, 0.04844, 0.050575, 0.052842, 0.055244, 0.057778, 0.060442, 0.06323, 0.066135, 0.069147, 0.072257, 0.075449, 0.07871, 0.082021, 0.085363, 0.088715, 0.092056, 0.095361, 0.098606, 0.101766, 0.104815, 0.107728, 0.110478, 0.113041, 0.115392, 0.117508, 0.119368, 0.120952, 0.12224, 0.123216, 0.123868, 0.124182, 0.12415, 0.123766, 0.123025, 0.121927, 0.120473, 0.11867, 0.116524, 0.114047, 0.111253, 0.108159, 0.104785, 0.101153, 0.097289, 0.09322, 0.088976, 0.084589, 0.080092, 0.075517, 0.0709, 0.066275, 0.061674, 0.05713, 0.052675, 0.048335, 0.044138, 0.040107, 0.03626, 0.032615, 0.029184, 0.025977, 0.022998, 0.020251, 0.017735, 0.015445, 0.013376, 0.011518, 0.009862, 0.008395, 0.007106, 0.005979, 0.005001, 0.004158, 0.003437, 0.002824, 0.002306, 0.001871]}};
-const S = DATA.students;
+const DATA = {"students": [{"doc": "DOC91272", "name": "周澤亨", "score": 94.56148, "rank": 1}, {"doc": "DOC91209", "name": "黃文忠", "score": 94.41526, "rank": 2}, {"doc": "DOC91251", "name": "沈建言", "score": 94.19338, "rank": 3}, {"doc": "DOC91284", "name": "盧德宇", "score": 94.12316, "rank": 4}, {"doc": "DOC91321", "name": "劉宇容", "score": 93.88579, "rank": 5}, {"doc": "DOC91348", "name": "呂昱瑩", "score": 93.77789, "rank": 6}, {"doc": "DOC91203", "name": "洪志碩", "score": 93.72895, "rank": 7}, {"doc": "DOC91255", "name": "柯柏再", "score": 93.72579, "rank": 8}, {"doc": "DOC91299", "name": "楊文吾", "score": 93.69697, "rank": 9}, {"doc": "DOC91271", "name": "鄭博元", "score": 93.64794, "rank": 10}, {"doc": "DOC91256", "name": "游宜蓁", "score": 93.63211, "rank": 11}, {"doc": "DOC91205", "name": "朱柏安", "score": 93.58579, "rank": 12}, {"doc": "DOC91287", "name": "楊承恩", "score": 93.55212, "rank": 13}, {"doc": "DOC91312", "name": "姚品瑄", "score": 93.54446, "rank": 14}, {"doc": "DOC91330", "name": "林映汝", "score": 93.42102, "rank": 15}, {"doc": "DOC91277", "name": "林楷舜", "score": 93.41105, "rank": 16}, {"doc": "DOC91264", "name": "許竣傑", "score": 93.40842, "rank": 17}, {"doc": "DOC91291", "name": "陳宥均", "score": 93.38947, "rank": 18}, {"doc": "DOC91214", "name": "蕭郁軒", "score": 93.35009, "rank": 19}, {"doc": "DOC91334", "name": "劉欣玫", "score": 93.32105, "rank": 20}, {"doc": "DOC91212", "name": "徐良碩", "score": 93.31263, "rank": 21}, {"doc": "DOC91234", "name": "陳楷翔", "score": 93.12263, "rank": 22}, {"doc": "DOC91219", "name": "高郁棠", "score": 93.09263, "rank": 23}, {"doc": "DOC91322", "name": "林宏杰", "score": 92.99114, "rank": 24}, {"doc": "DOC91270", "name": "趙聲泓", "score": 92.96263, "rank": 25}, {"doc": "DOC91303", "name": "黃昱翔", "score": 92.94421, "rank": 26}, {"doc": "DOC91233", "name": "郭中皓", "score": 92.91526, "rank": 27}, {"doc": "DOC91323", "name": "郁賀羽", "score": 92.85053, "rank": 28}, {"doc": "DOC91319", "name": "黃馨卉", "score": 92.84158, "rank": 29}, {"doc": "DOC91320", "name": "周芷妤", "score": 92.78158, "rank": 30}, {"doc": "DOC91249", "name": "李昕燁", "score": 92.71467, "rank": 31}, {"doc": "DOC91227", "name": "張哲維", "score": 92.64947, "rank": 32}, {"doc": "DOC91240", "name": "宋啟榮", "score": 92.59053, "rank": 33}, {"doc": "DOC91202", "name": "楊旻修", "score": 92.55789, "rank": 34}, {"doc": "DOC91217", "name": "黎豪正", "score": 92.47842, "rank": 35}, {"doc": "DOC91261", "name": "賴敬堯", "score": 92.40474, "rank": 36}, {"doc": "DOC91278", "name": "李典哲", "score": 92.35842, "rank": 37}, {"doc": "DOC91283", "name": "龔郁軒", "score": 92.28474, "rank": 38}, {"doc": "DOC91229", "name": "張駿霖", "score": 92.27579, "rank": 39}, {"doc": "DOC91307", "name": "林郁瀚", "score": 92.23421, "rank": 40}, {"doc": "DOC91201", "name": "徐來佑", "score": 92.19526, "rank": 41}, {"doc": "DOC91279", "name": "廖友德", "score": 92.18737, "rank": 42}, {"doc": "DOC91292", "name": "李霖", "score": 92.04211, "rank": 43}, {"doc": "DOC91328", "name": "林靜", "score": 92.02737, "rank": 44}, {"doc": "DOC91347", "name": "明宗秀", "score": 91.97842, "rank": 45}, {"doc": "DOC91338", "name": "郭芳妤", "score": 91.96053, "rank": 46}, {"doc": "DOC91239", "name": "王梓恩", "score": 91.81105, "rank": 47}, {"doc": "DOC91327", "name": "林紘毅", "score": 91.79842, "rank": 48}, {"doc": "DOC91245", "name": "蔡秉昕", "score": 91.79, "rank": 49}, {"doc": "DOC91325", "name": "許曜顯", "score": 91.78632, "rank": 50}, {"doc": "DOC91236", "name": "蘇冠瑋", "score": 91.72368, "rank": 51}, {"doc": "DOC91265", "name": "謝雨璇", "score": 91.67684, "rank": 52}, {"doc": "DOC91339", "name": "陳薏婷", "score": 91.58105, "rank": 53}, {"doc": "DOC91290", "name": "李瑋", "score": 91.57895, "rank": 54}, {"doc": "DOC91258", "name": "李宜家", "score": 91.5763, "rank": 55}, {"doc": "DOC91337", "name": "施宏賢", "score": 91.47526, "rank": 56}, {"doc": "DOC91248", "name": "江鎮宇", "score": 91.43053, "rank": 57}, {"doc": "DOC91211", "name": "陳韋壬", "score": 91.42053, "rank": 58}, {"doc": "DOC91257", "name": "郭芸嘉", "score": 91.40684, "rank": 59}, {"doc": "DOC91314", "name": "曾翔麟", "score": 91.39368, "rank": 60}, {"doc": "DOC91341", "name": "方郁淳", "score": 91.36789, "rank": 61}, {"doc": "DOC91342", "name": "杜芝均", "score": 91.36526, "rank": 62}, {"doc": "DOC91329", "name": "孫漢瑄", "score": 91.36, "rank": 63}, {"doc": "DOC91238", "name": "賀靖洋", "score": 91.27895, "rank": 64}, {"doc": "DOC91282", "name": "李秉桀", "score": 91.23684, "rank": 65}, {"doc": "DOC91221", "name": "宋明曄", "score": 91.14263, "rank": 66}, {"doc": "DOC91267", "name": "黃柏瑞", "score": 91.04526, "rank": 67}, {"doc": "DOC91333", "name": "林昀霓", "score": 91.02862, "rank": 68}, {"doc": "DOC91232", "name": "張迦恩", "score": 90.94579, "rank": 69}, {"doc": "DOC91208", "name": "陳佑柏", "score": 90.92421, "rank": 70}, {"doc": "DOC91235", "name": "高兢東", "score": 90.92, "rank": 71}, {"doc": "DOC91252", "name": "王奕為", "score": 90.86211, "rank": 72}, {"doc": "DOC91298", "name": "黃宜蓁", "score": 90.83895, "rank": 73}, {"doc": "DOC91300", "name": "鍾宇翔", "score": 90.83474, "rank": 74}, {"doc": "DOC91311", "name": "陳俊宇", "score": 90.71316, "rank": 75}, {"doc": "DOC91213", "name": "張鈞翔", "score": 90.71211, "rank": 76}, {"doc": "DOC91332", "name": "于愔", "score": 90.68684, "rank": 77}, {"doc": "DOC91304", "name": "翁沛緹", "score": 90.64947, "rank": 78}, {"doc": "DOC91242", "name": "陳冠豪", "score": 90.62847, "rank": 79}, {"doc": "DOC91296", "name": "卓浩玄", "score": 90.60526, "rank": 80}, {"doc": "DOC90237", "name": "李逸佳", "score": 90.57422, "rank": 81}, {"doc": "DOC91276", "name": "沈宏珉", "score": 90.54737, "rank": 82}, {"doc": "DOC91297", "name": "向冠霖", "score": 90.42, "rank": 83}, {"doc": "DOC91244", "name": "張恩睿", "score": 90.36737, "rank": 84}, {"doc": "DOC91253", "name": "陳俊維", "score": 90.31158, "rank": 85}, {"doc": "DOC91228", "name": "黃譯禾", "score": 90.29474, "rank": 86}, {"doc": "DOC91223", "name": "任興賢", "score": 90.23158, "rank": 87}, {"doc": "DOC91207", "name": "李威霖", "score": 90.21947, "rank": 88}, {"doc": "DOC91346", "name": "周智城", "score": 90.09316, "rank": 89}, {"doc": "DOC91309", "name": "洪靖豐", "score": 90.02263, "rank": 90}, {"doc": "DOC91226", "name": "陳麒安", "score": 89.98, "rank": 91}, {"doc": "DOC91288", "name": "康瀚太", "score": 89.97316, "rank": 92}, {"doc": "DOC91318", "name": "郭睿恩", "score": 89.85212, "rank": 93}, {"doc": "DOC91266", "name": "紀愷杰", "score": 89.81, "rank": 94}, {"doc": "DOC91247", "name": "黃偉浩", "score": 89.79, "rank": 95}, {"doc": "DOC91241", "name": "林宴辰", "score": 89.72474, "rank": 96}, {"doc": "DOC91274", "name": "王辰睿", "score": 89.69947, "rank": 97}, {"doc": "DOC91331", "name": "姜知言", "score": 89.50789, "rank": 98}, {"doc": "DOC91295", "name": "陳佑", "score": 89.50684, "rank": 99}, {"doc": "DOC91260", "name": "古少榆", "score": 89.48632, "rank": 100}, {"doc": "DOC91294", "name": "許家珩", "score": 89.41737, "rank": 101}, {"doc": "DOC91286", "name": "蘇喜容", "score": 89.35474, "rank": 102}, {"doc": "DOC91216", "name": "黃泓量", "score": 89.33127, "rank": 103}, {"doc": "DOC91268", "name": "莊承勳", "score": 89.2496, "rank": 104}, {"doc": "DOC91289", "name": "王行遠", "score": 89.19737, "rank": 105}, {"doc": "DOC91210", "name": "戴語賢", "score": 89.13684, "rank": 106}, {"doc": "DOC91275", "name": "王梓驊", "score": 89.12053, "rank": 107}, {"doc": "DOC91273", "name": "王博憲", "score": 88.92895, "rank": 108}, {"doc": "DOC91302", "name": "劉雨牧", "score": 88.90263, "rank": 109}, {"doc": "DOC91285", "name": "謝定軒", "score": 88.84368, "rank": 110}, {"doc": "DOC91345", "name": "林展毅", "score": 88.74842, "rank": 111}, {"doc": "DOC91293", "name": "伍嘉傑", "score": 88.72316, "rank": 112}, {"doc": "DOC91237", "name": "郭子群", "score": 88.50474, "rank": 113}, {"doc": "DOC91215", "name": "王賢堯", "score": 88.23316, "rank": 114}, {"doc": "DOC91220", "name": "吳羿儒", "score": 88.10789, "rank": 115}, {"doc": "DOC91324", "name": "林柏樺", "score": 87.91158, "rank": 116}, {"doc": "DOC91269", "name": "許愷峻", "score": 87.87158, "rank": 117}, {"doc": "DOC91315", "name": "林育正", "score": 87.73053, "rank": 118}, {"doc": "DOC91254", "name": "陳奕君", "score": 87.72105, "rank": 119}, {"doc": "DOC91225", "name": "黃君瑜", "score": 87.55947, "rank": 120}, {"doc": "DOC91305", "name": "葉弘毅", "score": 87.48526, "rank": 121}, {"doc": "DOC91336", "name": "施佩蓁", "score": 87.29316, "rank": 122}, {"doc": "DOC91204", "name": "陳冠勛", "score": 87.22, "rank": 123}, {"doc": "DOC91340", "name": "陳畇蓁", "score": 87.16526, "rank": 124}, {"doc": "DOC91343", "name": "王柏鈞", "score": 87.04632, "rank": 125}, {"doc": "DOC91246", "name": "顏典立", "score": 86.38947, "rank": 126}, {"doc": "DOC91259", "name": "陳奎宇", "score": 86.08895, "rank": 127}, {"doc": "DOC91317", "name": "林洸宇", "score": 85.84421, "rank": 128}, {"doc": "DOC91310", "name": "吳玟潔", "score": 85.72947, "rank": 129}, {"doc": "DOC91353", "name": "梁禹麟", "score": 85.57842, "rank": 130}, {"doc": "DOC91263", "name": "邱德宸", "score": 85.53, "rank": 131}, {"doc": "DOC91222", "name": "吳亭霖", "score": 85.41684, "rank": 132}, {"doc": "DOC91301", "name": "呂沅泰", "score": 85.34053, "rank": 133}, {"doc": "DOC90331", "name": "黃楷勛", "score": 84.98842, "rank": 134}, {"doc": "DOC91243", "name": "水修寬", "score": 84.52895, "rank": 135}, {"doc": "DOC91231", "name": "李亞叡", "score": 84.11684, "rank": 136}, {"doc": "DOC91206", "name": "郭逸賢", "score": 83.97895, "rank": 137}, {"doc": "DOC91316", "name": "周科霖", "score": 83.95895, "rank": 138}, {"doc": "DOC91218", "name": "蔡鼎騏", "score": 83.79842, "rank": 139}, {"doc": "DOC91349", "name": "劉廷娟", "score": 83.47316, "rank": 140}, {"doc": "DOC91308", "name": "謝德馨", "score": 83.26526, "rank": 141}, {"doc": "DOC91352", "name": "黃駿宥", "score": 82.31789, "rank": 142}, {"doc": "DOC91224", "name": "柯日新", "score": 81.76, "rank": 143}, {"doc": "DOC91351", "name": "寸得滿", "score": 81.65474, "rank": 144}, {"doc": "DOC91354", "name": "吳昱荷", "score": 81.62842, "rank": 145}, {"doc": "DOC90253", "name": "李奇", "score": 80.284, "rank": 146}, {"doc": "DOC91230", "name": "廖見洋", "score": 80.09263, "rank": 147}, {"doc": "DOC91281", "name": "游定三", "score": 78.46105, "rank": 148}, {"doc": "DOC91250", "name": "黃志豪", "score": 76.93, "rank": 149}, {"doc": "DOC91280", "name": "林宗吾", "score": 75.73053, "rank": 150}, {"doc": "DOC91344", "name": "莊宏森", "score": 75.35368, "rank": 151}, {"doc": "DOC91306", "name": "吳挺倫", "score": 74.13923, "rank": 152}, {"doc": "DOC91313", "name": "蔡銘祐", "score": 73.14, "rank": 153}, {"doc": "DOC91262", "name": "李冠澤", "score": 72.69158, "rank": 154}], "stats": {"mean": 89.3776, "median": 90.66815, "std": 4.41882, "total": 154, "lo": 69.271, "hi": 97.982}, "kde": {"x": [69.2707, 69.415, 69.5593, 69.7035, 69.8478, 69.9921, 70.1364, 70.2807, 70.4249, 70.5692, 70.7135, 70.8578, 71.0021, 71.1463, 71.2906, 71.4349, 71.5792, 71.7235, 71.8677, 72.012, 72.1563, 72.3006, 72.4449, 72.5891, 72.7334, 72.8777, 73.022, 73.1663, 73.3105, 73.4548, 73.5991, 73.7434, 73.8876, 74.0319, 74.1762, 74.3205, 74.4648, 74.609, 74.7533, 74.8976, 75.0419, 75.1862, 75.3304, 75.4747, 75.619, 75.7633, 75.9076, 76.0518, 76.1961, 76.3404, 76.4847, 76.629, 76.7732, 76.9175, 77.0618, 77.2061, 77.3504, 77.4946, 77.6389, 77.7832, 77.9275, 78.0718, 78.216, 78.3603, 78.5046, 78.6489, 78.7932, 78.9374, 79.0817, 79.226, 79.3703, 79.5146, 79.6588, 79.8031, 79.9474, 80.0917, 80.236, 80.3802, 80.5245, 80.6688, 80.8131, 80.9574, 81.1016, 81.2459, 81.3902, 81.5345, 81.6788, 81.823, 81.9673, 82.1116, 82.2559, 82.4002, 82.5444, 82.6887, 82.833, 82.9773, 83.1216, 83.2658, 83.4101, 83.5544, 83.6987, 83.8429, 83.9872, 84.1315, 84.2758, 84.4201, 84.5643, 84.7086, 84.8529, 84.9972, 85.1415, 85.2857, 85.43, 85.5743, 85.7186, 85.8629, 86.0071, 86.1514, 86.2957, 86.44, 86.5843, 86.7285, 86.8728, 87.0171, 87.1614, 87.3057, 87.4499, 87.5942, 87.7385, 87.8828, 88.0271, 88.1713, 88.3156, 88.4599, 88.6042, 88.7485, 88.8927, 89.037, 89.1813, 89.3256, 89.4699, 89.6141, 89.7584, 89.9027, 90.047, 90.1913, 90.3355, 90.4798, 90.6241, 90.7684, 90.9127, 91.0569, 91.2012, 91.3455, 91.4898, 91.6341, 91.7783, 91.9226, 92.0669, 92.2112, 92.3555, 92.4997, 92.644, 92.7883, 92.9326, 93.0769, 93.2211, 93.3654, 93.5097, 93.654, 93.7982, 93.9425, 94.0868, 94.2311, 94.3754, 94.5196, 94.6639, 94.8082, 94.9525, 95.0968, 95.241, 95.3853, 95.5296, 95.6739, 95.8182, 95.9624, 96.1067, 96.251, 96.3953, 96.5396, 96.6838, 96.8281, 96.9724, 97.1167, 97.261, 97.4052, 97.5495, 97.6938, 97.8381, 97.9824], "y": [0.000353, 0.000422, 0.000502, 0.000593, 0.000696, 0.000812, 0.00094, 0.001083, 0.00124, 0.00141, 0.001594, 0.001792, 0.002002, 0.002223, 0.002455, 0.002695, 0.002943, 0.003196, 0.003452, 0.00371, 0.003966, 0.00422, 0.004468, 0.00471, 0.004942, 0.005164, 0.005373, 0.005569, 0.00575, 0.005916, 0.006065, 0.006198, 0.006315, 0.006415, 0.006498, 0.006565, 0.006616, 0.006652, 0.006673, 0.00668, 0.006674, 0.006655, 0.006625, 0.006585, 0.006535, 0.006477, 0.006413, 0.006343, 0.00627, 0.006195, 0.006121, 0.006048, 0.005979, 0.005916, 0.005861, 0.005817, 0.005784, 0.005766, 0.005763, 0.005778, 0.005812, 0.005867, 0.005943, 0.006042, 0.006165, 0.006311, 0.006482, 0.006676, 0.006895, 0.007137, 0.007402, 0.00769, 0.008, 0.00833, 0.008679, 0.009048, 0.009434, 0.009837, 0.010256, 0.010691, 0.011139, 0.011603, 0.012079, 0.012569, 0.013073, 0.013589, 0.014119, 0.014662, 0.015218, 0.015787, 0.016369, 0.016964, 0.017572, 0.018193, 0.018825, 0.019469, 0.020124, 0.020789, 0.021464, 0.022148, 0.022842, 0.023544, 0.024257, 0.024981, 0.025716, 0.026466, 0.027232, 0.028019, 0.02883, 0.029671, 0.030546, 0.031463, 0.032427, 0.033447, 0.034529, 0.035684, 0.036918, 0.038239, 0.039657, 0.041179, 0.042812, 0.044563, 0.046438, 0.04844, 0.050575, 0.052842, 0.055244, 0.057778, 0.060442, 0.06323, 0.066135, 0.069147, 0.072257, 0.075449, 0.07871, 0.082021, 0.085363, 0.088715, 0.092056, 0.095361, 0.098606, 0.101766, 0.104815, 0.107728, 0.110478, 0.113041, 0.115392, 0.117508, 0.119368, 0.120952, 0.12224, 0.123216, 0.123868, 0.124182, 0.12415, 0.123766, 0.123025, 0.121927, 0.120473, 0.11867, 0.116524, 0.114047, 0.111253, 0.108159, 0.104785, 0.101153, 0.097289, 0.09322, 0.088976, 0.084589, 0.080092, 0.075517, 0.0709, 0.066275, 0.061674, 0.05713, 0.052675, 0.048335, 0.044138, 0.040107, 0.03626, 0.032615, 0.029184, 0.025977, 0.022998, 0.020251, 0.017735, 0.015445, 0.013376, 0.011518, 0.009862, 0.008395, 0.007106, 0.005979, 0.005001, 0.004158, 0.003437, 0.002824, 0.002306, 0.001871]}};
+const S = DATA.students.map((student, index) => ({
+  ...student,
+  index,
+  docKey: student.doc.toLowerCase(),
+  percentile: Math.round(((DATA.stats.total - student.rank) / DATA.stats.total) * 100),
+  z: DATA.stats.std ? (student.score - DATA.stats.mean) / DATA.stats.std : 0,
+}));
 const ST = DATA.stats;
 const KDE = DATA.kde;
+const LAST10_RANGE = "145-154";
 
-// ---------- search ----------
-const inp = document.getElementById('searchInput');
-const dd  = document.getElementById('dropdown');
+const state = {
+  compareMode: false,
+  activeSlot: "primary",
+  selected: { primary: null, compare: null },
+  openPanel: null,
+};
 
-function filterStudents(q) {
-  if (!q) return [];
-  const lq = q.toLowerCase();
-  return S.filter(s => s.name.includes(q) || s.doc.toLowerCase().includes(lq)).slice(0, 40);
+const rankIndex = new Map();
+S.forEach((student, index) => rankIndex.set(student.rank, index));
+
+const slotMeta = {
+  primary: {
+    label: "主卡",
+    color: "#cc785c",
+    input: document.getElementById("search-primary"),
+    panel: document.getElementById("panel-primary"),
+    card: document.getElementById("card-primary"),
+  },
+  compare: {
+    label: "比較卡",
+    color: "#7bbce8",
+    input: document.getElementById("search-compare"),
+    panel: document.getElementById("panel-compare"),
+    card: document.getElementById("card-compare"),
+  },
+};
+
+const compareToggle = document.getElementById("compareToggle");
+const compareSummary = document.getElementById("compareSummary");
+const compareGrid = document.getElementById("compareGrid");
+const compareSummaryText = document.getElementById("compareSummaryText");
+const cardsWrap = document.getElementById("cardsWrap");
+const searchGrid = document.getElementById("searchGrid");
+const legend = document.getElementById("legend");
+const swapCompareBtn = document.getElementById("swapCompareBtn");
+const shortcutButtons = Array.from(document.querySelectorAll("[data-shortcut]"));
+const comparePanelNote = document.querySelector(".compare-panel-note");
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
 
-function renderDropdown(list) {
-  if (!list.length) {
-    dd.innerHTML = '<div class="no-result">查無符合的學員</div>';
-  } else {
-    dd.innerHTML = list.map((s,i) =>
-      `<div class="drop-item" data-i="${i}" onclick="selectStudent(${S.indexOf(s)})">
-        <span class="di-name">${s.name}</span>
-        <span class="di-doc">${s.doc}</span>
-      </div>`
-    ).join('');
+function isTypingTarget(target) {
+  if (!target) return false;
+  const tagName = target.tagName;
+  return tagName === "INPUT" || tagName === "TEXTAREA" || target.isContentEditable;
+}
+
+function closePanel(slot) {
+  slotMeta[slot].panel.classList.remove("open");
+  slotMeta[slot].panel.innerHTML = "";
+  if (state.openPanel && state.openPanel.slot === slot) {
+    state.openPanel = null;
   }
-  dd.classList.add('open');
 }
 
-inp.addEventListener('input', () => {
-  const q = inp.value.trim();
-  if (!q) { dd.classList.remove('open'); return; }
-  renderDropdown(filterStudents(q));
-});
-
-document.addEventListener('click', e => {
-  if (!inp.contains(e.target) && !dd.contains(e.target)) dd.classList.remove('open');
-});
-
-// ---------- select student ----------
-let selectedScore = null;
-
-function selectStudent(idx) {
-  const s = S[idx];
-  dd.classList.remove('open');
-  inp.value = s.name;
-
-  // calc stats
-  const z   = (s.score - ST.mean) / ST.std;
-  const pct = Math.round(S.filter(x => x.score < s.score).length / ST.total * 100);
-
-  document.getElementById('cardName').textContent = s.name;
-  document.getElementById('cardDoc').textContent  = s.doc;
-
-  // animated numbers
-  animateNum('sScore', 0, s.score, 600, v => v.toFixed(2));
-  animateNum('sRank',  0, s.rank || 0, 500, v => Math.round(v));
-  document.getElementById('sRankSub').textContent = `共 ${ST.total} 人`;
-  animateNum('sZ',   0, Math.abs(z), 500, v => (z >= 0 ? '+' : '-') + v.toFixed(2));
-  animateNum('sPct', 0, pct, 500, v => Math.round(v) + '%');
-
-  // show card
-  const card = document.getElementById('card');
-  card.style.display = 'block';
-  requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('animated')));
-
-  // show legend item
-  document.getElementById('legStudent').style.display = 'flex';
-  document.getElementById('legStudentLabel').textContent = s.name + ' (' + s.score.toFixed(2) + ')';
-
-  // draw chart with student line
-  selectedScore = s.score;
-  drawChart(s.score);
+function closeAllPanels(exceptSlot = null) {
+  Object.keys(slotMeta).forEach((slot) => {
+    if (slot !== exceptSlot) closePanel(slot);
+  });
 }
 
-function animateNum(id, from, to, dur, fmt) {
-  const el = document.getElementById(id);
-  const start = performance.now();
-  function step(now) {
-    const t = Math.min((now - start) / dur, 1);
-    const ease = 1 - Math.pow(1 - t, 3);
-    el.textContent = fmt(from + (to - from) * ease);
-    if (t < 1) requestAnimationFrame(step);
+function setActiveSlot(slot) {
+  if (slot === "compare" && !state.compareMode) return;
+  state.activeSlot = slot;
+  Object.entries(slotMeta).forEach(([key, meta]) => {
+    meta.card.classList.toggle("is-active", key === slot);
+    meta.card.dataset.active = key === slot ? "true" : "false";
+    meta.card.closest(".search-panel")?.classList.remove("is-active");
+  });
+  document.querySelectorAll(".search-panel").forEach((panel) => {
+    panel.classList.toggle("is-active", panel.dataset.slot === slot);
+  });
+}
+
+function getStudent(index) {
+  if (index === null || index === undefined) return null;
+  return S[index] || null;
+}
+
+function buildResultItems(query) {
+  const raw = query.trim();
+  if (!raw) return { kind: "empty", items: [], summary: "" };
+
+  if (/^doc/i.test(raw)) {
+    const docQuery = raw.toLowerCase();
+    const exact = [];
+    const prefix = [];
+    const partial = [];
+    S.forEach((student) => {
+      if (student.docKey === docQuery) exact.push(student.index);
+      else if (student.docKey.startsWith(docQuery)) prefix.push(student.index);
+      else if (student.docKey.includes(docQuery)) partial.push(student.index);
+    });
+    return {
+      kind: "match",
+      items: [...exact, ...prefix, ...partial].slice(0, 40),
+      summary: `DOC 查詢：${raw}`,
+    };
   }
-  requestAnimationFrame(step);
+
+  const rangeMatch = raw.match(/^(\d+)\s*-\s*(\d+)$/);
+  if (rangeMatch) {
+    const start = Number(rangeMatch[1]);
+    const end = Number(rangeMatch[2]);
+    const lo = clamp(Math.min(start, end), 1, ST.total);
+    const hi = clamp(Math.max(start, end), 1, ST.total);
+    const items = S.filter((student) => student.rank >= lo && student.rank <= hi).map((student) => student.index);
+    return {
+      kind: "range",
+      items,
+      summary: `名次區間 ${lo}-${hi}，共 ${items.length} 位`,
+      normalizedQuery: `${lo}-${hi}`,
+    };
+  }
+
+  if (/^\d+$/.test(raw)) {
+    const targetRank = Number(raw);
+    const exact = rankIndex.has(targetRank) ? [rankIndex.get(targetRank)] : [];
+    return {
+      kind: "match",
+      items: exact,
+      summary: `名次查詢：#${targetRank}`,
+    };
+  }
+
+  const items = S.filter((student) => student.name.includes(raw)).map((student) => student.index).slice(0, 40);
+  return {
+    kind: "match",
+    items,
+    summary: `姓名查詢：${raw}`,
+  };
 }
 
-// ---------- chart ----------
-const canvas = document.getElementById('chart');
+function resultItemMarkup(slot, studentIndex, highlighted) {
+  const student = S[studentIndex];
+  return `
+    <button
+      type="button"
+      class="result-item ${highlighted ? "is-highlighted" : ""}"
+      data-student-index="${student.index}"
+      onclick="window.__scoreDashboard.selectStudent('${slot}', ${student.index}); return false;"
+    >
+      <span class="result-rank">#${student.rank}</span>
+      <span class="result-main">
+        <span class="result-name">${student.name}</span>
+        <span class="result-meta">${student.doc}</span>
+      </span>
+      <span class="result-score">${student.score.toFixed(2)}</span>
+    </button>
+  `;
+}
+
+function renderSearchPanel(slot, query) {
+  const panel = slotMeta[slot].panel;
+  const result = buildResultItems(query);
+  closeAllPanels(slot);
+
+  if (result.kind === "empty") {
+    closePanel(slot);
+    return;
+  }
+
+  const hasItems = result.items.length > 0;
+  state.openPanel = {
+    slot,
+    items: result.items,
+    highlight: hasItems ? 0 : -1,
+    kind: result.kind,
+    normalizedQuery: result.normalizedQuery || query.trim(),
+  };
+
+  const summary = `<div class="result-summary">${result.summary}</div>`;
+  const body = hasItems
+    ? `<div class="result-list">${result.items.map((item, idx) => resultItemMarkup(slot, item, idx === 0)).join("")}</div>`
+    : `<div class="empty-result">查無符合結果</div>`;
+
+  panel.innerHTML = summary + body;
+  panel.classList.add("open");
+}
+
+function rerenderOpenPanel() {
+  if (!state.openPanel) return;
+  const { slot, items, kind, highlight, normalizedQuery } = state.openPanel;
+  const panel = slotMeta[slot].panel;
+  const summaryText = kind === "range"
+    ? `名次區間 ${normalizedQuery}，共 ${items.length} 位`
+    : `查詢結果`;
+  const summary = `<div class="result-summary">${summaryText}</div>`;
+  const body = items.length
+    ? `<div class="result-list">${items.map((item, idx) => resultItemMarkup(slot, item, idx === highlight)).join("")}</div>`
+    : `<div class="empty-result">查無符合結果</div>`;
+  panel.innerHTML = summary + body;
+  panel.classList.add("open");
+}
+
+function selectStudent(slot, studentIndex, options = {}) {
+  const student = getStudent(studentIndex);
+  if (!student) return;
+  state.selected[slot] = student.index;
+  slotMeta[slot].input.value = student.name;
+  if (options.focus !== false) setActiveSlot(slot);
+  closePanel(slot);
+  renderCard(slot);
+  renderCompareSummary();
+  updateLegend();
+  drawChart();
+}
+
+function shiftRank(slot, direction) {
+  const currentIndex = state.selected[slot];
+  if (currentIndex === null) return;
+  const nextIndex = clamp(currentIndex + direction, 0, S.length - 1);
+  if (nextIndex === currentIndex) return;
+  selectStudent(slot, nextIndex);
+}
+
+function updateShortcutStates(activeQuery = "") {
+  shortcutButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.shortcut === activeQuery);
+  });
+}
+
+function nearbyMarkup(slot, centerIndex) {
+  const start = Math.max(0, centerIndex - 2);
+  const end = Math.min(S.length - 1, centerIndex + 2);
+  const rows = [];
+  for (let index = start; index <= end; index += 1) {
+    const student = S[index];
+    rows.push(`
+      <button
+        type="button"
+        class="nearby-item ${index === centerIndex ? "is-current" : ""}"
+        data-slot="${slot}"
+        data-student-index="${student.index}"
+        onclick="window.__scoreDashboard.selectStudent('${slot}', ${student.index}); return false;"
+      >
+        <span class="result-rank">#${student.rank}</span>
+        <span>
+          <div class="nearby-name">${student.name}</div>
+          <div class="nearby-doc">${student.doc}</div>
+        </span>
+        <span class="nearby-score">${student.score.toFixed(2)}</span>
+      </button>
+    `);
+  }
+  return rows.join("");
+}
+
+function renderCard(slot) {
+  const meta = slotMeta[slot];
+  const card = meta.card;
+  const student = getStudent(state.selected[slot]);
+  const emptyField = card.querySelector('[data-field="empty"]');
+  const nameField = card.querySelector('[data-field="name"]');
+  const docField = card.querySelector('[data-field="doc"]');
+  const scoreField = card.querySelector('[data-field="score"]');
+  const rankField = card.querySelector('[data-field="rank"]');
+  const rankSubField = card.querySelector('[data-field="rankSub"]');
+  const zField = card.querySelector('[data-field="z"]');
+  const pctField = card.querySelector('[data-field="pct"]');
+  const nearbyField = card.querySelector('[data-field="nearby"]');
+  const prevButton = card.querySelector('[data-dir="-1"]');
+  const nextButton = card.querySelector('[data-dir="1"]');
+
+  if (!student) {
+    nameField.textContent = slot === "primary" ? "尚未選擇學生" : "尚未加入比較對象";
+    docField.textContent = slot === "primary"
+      ? "請從上方輸入姓名、名次，或 DOC 後載入結果。"
+      : "開啟雙人比較後，從上方搜尋第二位學生。";
+    emptyField.hidden = false;
+    scoreField.textContent = "—";
+    rankField.textContent = "—";
+    rankSubField.textContent = `共 ${ST.total} 人`;
+    zField.textContent = "—";
+    pctField.textContent = "—";
+    nearbyField.innerHTML = "";
+    prevButton.disabled = true;
+    nextButton.disabled = true;
+    return;
+  }
+
+  emptyField.hidden = true;
+  nameField.textContent = student.name;
+  docField.textContent = `${student.doc} · 第 ${student.rank} 名 / 共 ${ST.total} 人`;
+  scoreField.textContent = student.score.toFixed(2);
+  rankField.textContent = `#${student.rank}`;
+  rankSubField.textContent = `共 ${ST.total} 人`;
+  zField.textContent = `${student.z >= 0 ? "+" : ""}${student.z.toFixed(2)}`;
+  pctField.textContent = `${student.percentile}%`;
+  nearbyField.innerHTML = nearbyMarkup(slot, student.index);
+  prevButton.disabled = student.index === 0;
+  nextButton.disabled = student.index === S.length - 1;
+}
+
+function renderCompareSummary() {
+  if (!state.compareMode) {
+    compareSummary.classList.remove("is-ready");
+    compareGrid.hidden = true;
+    compareSummaryText.textContent = "開啟比較後，選兩位學生就會在這裡顯示差異摘要。";
+    return;
+  }
+
+  const primary = getStudent(state.selected.primary);
+  const compare = getStudent(state.selected.compare);
+  if (!primary || !compare) {
+    compareSummary.classList.remove("is-ready");
+    compareGrid.hidden = true;
+    compareSummaryText.textContent = "再選兩位學生，就會顯示分數差、名次差，以及誰分數較高 / 名次較前。";
+    return;
+  }
+
+  compareSummary.classList.add("is-ready");
+  compareGrid.hidden = false;
+  const scoreDiff = Math.abs(primary.score - compare.score);
+  const rankDiff = Math.abs(primary.rank - compare.rank);
+  const scoreLeader = primary.score === compare.score
+    ? "同分"
+    : (primary.score > compare.score ? `${primary.name}` : `${compare.name}`);
+  const rankLeader = primary.rank === compare.rank
+    ? "同名次"
+    : (primary.rank < compare.rank ? `${primary.name}` : `${compare.name}`);
+
+  compareSummaryText.textContent = `${primary.name} 與 ${compare.name} 的雙人比較結果`;
+  document.getElementById("diffScore").textContent = scoreDiff.toFixed(2);
+  document.getElementById("diffRank").textContent = `${rankDiff} 名`;
+  document.getElementById("leadScore").textContent = scoreLeader;
+  document.getElementById("leadRank").textContent = rankLeader;
+}
+
+function updateLegend() {
+  const dynamicItems = [];
+  const primary = getStudent(state.selected.primary);
+  const compare = state.compareMode ? getStudent(state.selected.compare) : null;
+
+  if (primary) {
+    dynamicItems.push(`
+      <div class="leg-item">
+        <span class="leg-swatch" style="background:${slotMeta.primary.color}"></span>
+        ${primary.name} (${primary.score.toFixed(2)})
+      </div>
+    `);
+  }
+
+  if (compare) {
+    dynamicItems.push(`
+      <div class="leg-item">
+        <span class="leg-swatch" style="background:${slotMeta.compare.color}"></span>
+        ${compare.name} (${compare.score.toFixed(2)})
+      </div>
+    `);
+  }
+
+  legend.querySelectorAll(".dynamic-legend").forEach((node) => node.remove());
+  if (dynamicItems.length) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "dynamic-legend";
+    wrapper.style.display = "contents";
+    wrapper.innerHTML = dynamicItems.join("");
+    legend.appendChild(wrapper);
+  }
+}
+
+const canvas = document.getElementById("chart");
 const DPR = window.devicePixelRatio || 1;
 
 function setCanvasSize() {
-  const w = canvas.parentElement.clientWidth - 40;
-  const h = Math.max(220, Math.min(320, w * 0.42));
-  canvas.width  = w * DPR;
-  canvas.height = h * DPR;
-  canvas.style.width  = w + 'px';
-  canvas.style.height = h + 'px';
+  const width = canvas.parentElement.clientWidth;
+  const height = Math.max(260, Math.min(380, width * 0.46));
+  canvas.width = Math.floor(width * DPR);
+  canvas.height = Math.floor(height * DPR);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
 }
 
-function drawChart(studentScore) {
-  setCanvasSize();
-  const ctx = canvas.getContext('2d');
-  ctx.scale(DPR, DPR);
-  const W = canvas.width  / DPR;
-  const H = canvas.height / DPR;
-  const PAD = {l:36, r:16, t:12, b:36};
-  const CW = W - PAD.l - PAD.r;
-  const CH = H - PAD.t - PAD.b;
-
-  const xArr = KDE.x, yArr = KDE.y;
-  const xMin = ST.lo, xMax = ST.hi;
-  const yMax = Math.max(...yArr) * 1.12;
-
-  function xp(v) { return PAD.l + (v - xMin) / (xMax - xMin) * CW; }
-  function yp(v) { return PAD.t + CH - (v / yMax) * CH; }
-
-  ctx.clearRect(0, 0, W, H);
-
-  // ±1σ band
-  const s1lo = ST.mean - ST.std, s1hi = ST.mean + ST.std;
-  ctx.beginPath();
-  let first1 = true;
-  for (let i = 0; i < xArr.length; i++) {
-    if (xArr[i] < s1lo || xArr[i] > s1hi) continue;
-    if (first1) { ctx.moveTo(xp(xArr[i]), yp(yArr[i])); first1 = false; }
-    else ctx.lineTo(xp(xArr[i]), yp(yArr[i]));
-  }
-  ctx.lineTo(xp(s1hi), yp(0));
-  ctx.lineTo(xp(s1lo), yp(0));
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(204,120,92,0.18)';
-  ctx.fill();
-
-  // KDE curve (animate)
-  let animPhase = 0;
-  const totalPts = xArr.length;
-
-  function frame() {
-    ctx.clearRect(0, 0, W, H);
-
-    // ±1σ band (redraw each frame)
-    ctx.beginPath();
-    let f1 = true;
-    for (let i = 0; i < xArr.length; i++) {
-      if (xArr[i] < s1lo || xArr[i] > s1hi) continue;
-      if (f1) { ctx.moveTo(xp(xArr[i]), yp(yArr[i])); f1 = false; }
-      else ctx.lineTo(xp(xArr[i]), yp(yArr[i]));
-    }
-    ctx.lineTo(xp(s1hi), yp(0)); ctx.lineTo(xp(s1lo), yp(0)); ctx.closePath();
-    ctx.fillStyle = 'rgba(204,120,92,0.18)'; ctx.fill();
-
-    // curve up to animPhase
-    const lim = Math.floor(animPhase * totalPts);
-    if (lim > 1) {
-      // fill under curve
-      ctx.beginPath();
-      ctx.moveTo(xp(xArr[0]), yp(0));
-      for (let i = 0; i < lim; i++) ctx.lineTo(xp(xArr[i]), yp(yArr[i]));
-      ctx.lineTo(xp(xArr[lim-1]), yp(0));
-      ctx.closePath();
-      const grad = ctx.createLinearGradient(0, PAD.t, 0, PAD.t + CH);
-      grad.addColorStop(0,   'rgba(204,120,92,0.25)');
-      grad.addColorStop(1,   'rgba(204,120,92,0.02)');
-      ctx.fillStyle = grad; ctx.fill();
-
-      // curve line
-      ctx.beginPath();
-      ctx.moveTo(xp(xArr[0]), yp(yArr[0]));
-      for (let i = 1; i < lim; i++) ctx.lineTo(xp(xArr[i]), yp(yArr[i]));
-      ctx.strokeStyle = 'rgba(204,120,92,0.7)'; ctx.lineWidth = 2;
-      ctx.lineJoin = 'round'; ctx.stroke();
-    }
-
-    // x axis
-    ctx.strokeStyle = 'rgba(250,249,245,.12)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(PAD.l, PAD.t + CH); ctx.lineTo(PAD.l + CW, PAD.t + CH); ctx.stroke();
-
-    // x labels
-    ctx.fillStyle = '#a09d96'; ctx.font = '11px Inter,sans-serif'; ctx.textAlign = 'center';
-    const step = Math.ceil((xMax - xMin) / 8);
-    for (let v = Math.ceil(xMin); v <= xMax; v += step) {
-      ctx.fillText(v.toFixed(0), xp(v), H - 6);
-      ctx.strokeStyle = 'rgba(250,249,245,.06)'; ctx.lineWidth = .5;
-      ctx.beginPath(); ctx.moveTo(xp(v), PAD.t); ctx.lineTo(xp(v), PAD.t + CH); ctx.stroke();
-    }
-
-    // mean line
-    drawVLine(ctx, xp(ST.mean), PAD.t, PAD.t+CH, '#5db8a6', 1.5, [5,4]);
-    // median line
-    drawVLine(ctx, xp(ST.median), PAD.t, PAD.t+CH, '#e8a55a', 1.5, [5,4]);
-
-    // student line — always drawn last (on top), visible from start
-    if (studentScore !== null) {
-      const sx = xp(studentScore);
-      // glow
-      ctx.save();
-      ctx.shadowColor = '#cc785c'; ctx.shadowBlur = 8;
-      drawVLine(ctx, sx, PAD.t, PAD.t+CH, '#cc785c', 3, null);
-      ctx.restore();
-      // label above line
-      ctx.fillStyle = '#cc785c';
-      ctx.font = '500 11px Inter,sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('▼', sx, PAD.t + 10);
-    }
-
-    if (animPhase < 1) {
-      animPhase += 0.025;
-      requestAnimationFrame(frame);
-    } else {
-      animPhase = 1;
-    }
-  }
-
-  animPhase = 0;
-  requestAnimationFrame(frame);
-}
-
-function drawVLine(ctx, x, y1, y2, color, width, dash) {
+function drawLine(ctx, x, y1, y2, color, width, dash = null) {
   ctx.save();
-  ctx.strokeStyle = color; ctx.lineWidth = width;
-  if (dash) ctx.setLineDash(dash); else ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2); ctx.stroke();
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.setLineDash(dash || []);
+  ctx.moveTo(x, y1);
+  ctx.lineTo(x, y2);
+  ctx.stroke();
   ctx.restore();
 }
 
-// initial chart (no student)
-window.addEventListener('load', () => drawChart(null));
-window.addEventListener('resize', () => drawChart(selectedScore));
+function drawChart() {
+  setCanvasSize();
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width / DPR;
+  const H = canvas.height / DPR;
+  const PAD = { l: 40, r: 18, t: 18, b: 38 };
+  const CW = W - PAD.l - PAD.r;
+  const CH = H - PAD.t - PAD.b;
+  const xMin = ST.lo;
+  const xMax = ST.hi;
+  const yMax = Math.max(...KDE.y) * 1.12;
+
+  function xp(value) {
+    return PAD.l + ((value - xMin) / (xMax - xMin)) * CW;
+  }
+
+  function yp(value) {
+    return PAD.t + CH - (value / yMax) * CH;
+  }
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  const sigmaLo = ST.mean - ST.std;
+  const sigmaHi = ST.mean + ST.std;
+
+  ctx.beginPath();
+  let sigmaStarted = false;
+  KDE.x.forEach((xValue, index) => {
+    if (xValue < sigmaLo || xValue > sigmaHi) return;
+    const x = xp(xValue);
+    const y = yp(KDE.y[index]);
+    if (!sigmaStarted) {
+      ctx.moveTo(x, y);
+      sigmaStarted = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+  if (sigmaStarted) {
+    ctx.lineTo(xp(sigmaHi), yp(0));
+    ctx.lineTo(xp(sigmaLo), yp(0));
+    ctx.closePath();
+    ctx.fillStyle = "rgba(204,120,92,.18)";
+    ctx.fill();
+  }
+
+  const gradient = ctx.createLinearGradient(0, PAD.t, 0, PAD.t + CH);
+  gradient.addColorStop(0, "rgba(204,120,92,.26)");
+  gradient.addColorStop(1, "rgba(204,120,92,.02)");
+
+  ctx.beginPath();
+  ctx.moveTo(xp(KDE.x[0]), yp(0));
+  KDE.x.forEach((xValue, index) => {
+    ctx.lineTo(xp(xValue), yp(KDE.y[index]));
+  });
+  ctx.lineTo(xp(KDE.x[KDE.x.length - 1]), yp(0));
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  ctx.beginPath();
+  KDE.x.forEach((xValue, index) => {
+    const x = xp(xValue);
+    const y = yp(KDE.y[index]);
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = "rgba(204,120,92,.75)";
+  ctx.lineWidth = 2.4;
+  ctx.lineJoin = "round";
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(250,249,245,.12)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD.l, PAD.t + CH);
+  ctx.lineTo(PAD.l + CW, PAD.t + CH);
+  ctx.stroke();
+
+  ctx.fillStyle = "#a09d96";
+  ctx.font = "11px Inter, sans-serif";
+  ctx.textAlign = "center";
+  const step = Math.max(1, Math.ceil((xMax - xMin) / 8));
+  for (let tick = Math.ceil(xMin); tick <= xMax; tick += step) {
+    const x = xp(tick);
+    ctx.fillText(String(tick), x, H - 8);
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(250,249,245,.06)";
+    ctx.lineWidth = .6;
+    ctx.moveTo(x, PAD.t);
+    ctx.lineTo(x, PAD.t + CH);
+    ctx.stroke();
+  }
+
+  drawLine(ctx, xp(ST.mean), PAD.t, PAD.t + CH, "#5db8a6", 1.5, [6, 4]);
+  drawLine(ctx, xp(ST.median), PAD.t, PAD.t + CH, "#e8a55a", 1.5, [6, 4]);
+
+  const markers = [];
+  const primary = getStudent(state.selected.primary);
+  const compare = state.compareMode ? getStudent(state.selected.compare) : null;
+  if (primary) markers.push({ student: primary, color: slotMeta.primary.color, labelY: 12 });
+  if (compare) markers.push({ student: compare, color: slotMeta.compare.color, labelY: primary && Math.abs(primary.score - compare.score) < 0.3 ? 26 : 12 });
+
+  markers.forEach(({ student, color, labelY }) => {
+    const x = xp(student.score);
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
+    drawLine(ctx, x, PAD.t, PAD.t + CH, color, 2.8);
+    ctx.restore();
+    ctx.fillStyle = color;
+    ctx.font = "600 11px Inter, sans-serif";
+    ctx.fillText("▼", x, PAD.t + labelY);
+  });
+}
+
+function toggleCompareMode(forceValue = null) {
+  state.compareMode = forceValue === null ? !state.compareMode : forceValue;
+  document.body.classList.toggle("compare-on", state.compareMode);
+  comparePanelNote.hidden = !state.compareMode;
+  compareToggle.textContent = state.compareMode ? "關閉雙人比較" : "開啟雙人比較";
+  searchGrid.classList.toggle("compare-on", state.compareMode);
+  cardsWrap.classList.toggle("compare-on", state.compareMode);
+  if (!state.compareMode) {
+    closePanel("compare");
+    setActiveSlot("primary");
+  }
+  renderCompareSummary();
+  updateLegend();
+  drawChart();
+}
+
+function applyShortcut(rangeQuery) {
+  const slot = state.activeSlot === "compare" && state.compareMode ? "compare" : "primary";
+  slotMeta[slot].input.value = rangeQuery;
+  setActiveSlot(slot);
+  updateShortcutStates(rangeQuery);
+  renderSearchPanel(slot, rangeQuery);
+}
+
+window.__scoreDashboard = {
+  applyShortcut,
+  selectStudent,
+  shiftRank,
+  toggleCompareMode,
+};
+
+Object.entries(slotMeta).forEach(([slot, meta]) => {
+  meta.input.addEventListener("focus", () => setActiveSlot(slot));
+  meta.input.addEventListener("input", () => {
+    setActiveSlot(slot);
+    updateShortcutStates("");
+    renderSearchPanel(slot, meta.input.value);
+  });
+
+  meta.panel.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-student-index]");
+    if (!button) return;
+    const studentIndex = Number(button.dataset.studentIndex);
+    selectStudent(slot, studentIndex);
+  });
+
+  meta.card.addEventListener("click", () => setActiveSlot(slot));
+  meta.card.addEventListener("focus", () => setActiveSlot(slot));
+  meta.card.querySelectorAll("[data-dir]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setActiveSlot(slot);
+      shiftRank(slot, Number(button.dataset.dir));
+    });
+  });
+
+  meta.card.querySelector('[data-field="nearby"]').addEventListener("click", (event) => {
+    const button = event.target.closest("[data-student-index]");
+    if (!button) return;
+    selectStudent(slot, Number(button.dataset.studentIndex));
+  });
+});
+
+shortcutButtons.forEach((button) => {
+  button.addEventListener("click", () => applyShortcut(button.dataset.shortcut));
+});
+
+compareToggle.addEventListener("click", () => {
+  toggleCompareMode();
+  if (state.compareMode) {
+    setActiveSlot("compare");
+    slotMeta.compare.input.focus();
+  }
+});
+
+swapCompareBtn.addEventListener("click", () => {
+  if (!state.compareMode) return;
+  const primary = state.selected.primary;
+  const compare = state.selected.compare;
+  state.selected.primary = compare;
+  state.selected.compare = primary;
+  if (getStudent(state.selected.primary)) slotMeta.primary.input.value = getStudent(state.selected.primary).name;
+  if (getStudent(state.selected.compare)) slotMeta.compare.input.value = getStudent(state.selected.compare).name;
+  renderCard("primary");
+  renderCard("compare");
+  renderCompareSummary();
+  updateLegend();
+  drawChart();
+});
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".controls")) {
+    closeAllPanels();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "/" && !isTypingTarget(event.target)) {
+    event.preventDefault();
+    setActiveSlot("primary");
+    slotMeta.primary.input.focus();
+    slotMeta.primary.input.select();
+    return;
+  }
+
+  if (event.key === "Escape") {
+    if (state.openPanel) {
+      closePanel(state.openPanel.slot);
+      return;
+    }
+    const slot = state.activeSlot === "compare" && state.compareMode ? "compare" : "primary";
+    slotMeta[slot].input.value = "";
+    updateShortcutStates("");
+    return;
+  }
+
+  if (state.openPanel) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (!state.openPanel.items.length) return;
+      event.preventDefault();
+      const delta = event.key === "ArrowDown" ? 1 : -1;
+      const next = clamp(state.openPanel.highlight + delta, 0, state.openPanel.items.length - 1);
+      state.openPanel.highlight = next;
+      rerenderOpenPanel();
+      return;
+    }
+
+    if (event.key === "Enter") {
+      if (state.openPanel.highlight < 0) return;
+      event.preventDefault();
+      const studentIndex = state.openPanel.items[state.openPanel.highlight];
+      selectStudent(state.openPanel.slot, studentIndex);
+      return;
+    }
+  }
+
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    const slot = state.activeSlot === "compare" && state.compareMode ? "compare" : "primary";
+    if (state.selected[slot] === null) return;
+    event.preventDefault();
+    shiftRank(slot, event.key === "ArrowRight" ? 1 : -1);
+  }
+});
+
+window.addEventListener("resize", drawChart);
+
+renderCard("primary");
+renderCard("compare");
+renderCompareSummary();
+updateLegend();
+drawChart();
 </script>
 </body>
 </html>
